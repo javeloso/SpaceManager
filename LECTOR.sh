@@ -1,6 +1,8 @@
 #!/bin/bash
 # LECTOR.sh
 
+mkdir Trash
+
 opcion=0
 directorios=()
 tamanoDirectorios=()
@@ -8,6 +10,8 @@ archivos=()
 tamanoArchivos=()
 total=0
 mensaje="listar" 
+show=0
+yesNo=0
 
 function carga(){
     local directorioActual=$1
@@ -109,6 +113,23 @@ function reloaddirectories(){
     printf "\033[1;1H"
 }
 
+function showCurrent(){
+    clear
+    echo "¿QUIERES ELIMINAR EL ARCHIVO ${archivos[$1]} ${tamanoArchivos[$1]}"
+    if [ $yesNo -le 0 ]; then
+        echo -e "\e[30;47mNO\e[0m"
+        yesNo=0
+    else
+        echo "NO"
+    fi
+    if [ $yesNo -ge 1 ]; then
+        echo -e "\e[30;47mSI\e[0m"
+        yesNo=1;
+    else
+        echo "SI"
+    fi
+}
+
 # Listar todos los archivos del actual directorio
 printf "\e[?25l" # Ocultar cursor
 carga "$PWD"
@@ -120,9 +141,17 @@ while true; do
     read -rsn3 key
 
     if [[ $key == $'\e[A' ]]; then
-        ((opcion -= 1))
+        if [ $show -eq 0 ]; then
+            ((opcion -= 1))
+        else 
+            ((yesNo -= 1))
+        fi
     elif [[ $key == $'\e[B' ]]; then
-        ((opcion += 1))
+        if [ $show -eq 0 ]; then
+            ((opcion += 1))
+        else 
+            ((yesNo += 1))
+        fi
     elif [[ $key == $'' && $opcion -ge $((total + 1)) ]]; then
         printf "\e[?25h" # Mostrar cursor
         break  # Salir del bucle si se presiona Enter y opcion es igual o mayor que el total
@@ -130,18 +159,39 @@ while true; do
         carga $(dirname "$PWD")
         mostrar
     elif [[ $key == $'' ]]; then
-        if [ $opcion -gt $((${#archivos[@]} - 1)) ]; then
-            indice_directorio=$((opcion - ${#archivos[@]}))
+        if [ $show -eq 0 ]; then
+            if [ $opcion -lt ${#archivos[@]} ]; then
+                #showCurrent ${archivos[$opcion]}
+                yesNo=0
+                mensaje="¿QUIERES ELIMINAR EL ARCHIVO ${archivos[$opcion]}?"
+                show=1
+            elif [ $opcion -gt $((${#archivos[@]} - 1)) ]; then
+                indice_directorio=$((opcion - ${#archivos[@]}))
 
-            if [ $indice_directorio -lt ${#directorios[@]} ]; then
-                mensaje="${directorios[$indice_directorio]}"
-                carga "${directorios[$indice_directorio]}"
+                if [ $indice_directorio -lt ${#directorios[@]} ]; then
+                    mensaje="${directorios[$indice_directorio]}"
+                    carga "${directorios[$indice_directorio]}"
+                    mostrar
+                fi
+            fi
+        else 
+            if [ $yesNo -eq 0 ]; then
+                show=0
+                mensaje="listar"
+            else 
+                mv "${archivos[$opcion]}" Trash
+                carga "$PWD"
                 mostrar
+                show=0
+                mensaje="listar"
             fi
         fi
     fi
 
-
-    reloaddirectories
-    mostrar
+    if [ $show -eq 0 ]; then
+        reloaddirectories
+        mostrar
+    else 
+        showCurrent $opcion
+    fi
 done
