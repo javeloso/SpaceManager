@@ -7,24 +7,39 @@ tamanoDirectorios=()
 archivos=()
 tamanoArchivos=()
 total=0
+mensaje="listar" 
 
 function carga(){
+    local directorioActual=$1
+
+    opcion=0
+    directorios=()
+    tamanoDirectorios=()
+    archivos=()
+    tamanoArchivos=()
+    total=0
+
+    cd "$directorioActual" || exit
+
     numArchivos=0
     numdirectories=0
-    for file in *; do
+
+    for file in "$directorioActual"/*; do
         if [ -d "$file" ]; then
             directorios[$numdirectories]="$file"
             tamanoDirectorios[$numdirectories]=$(du -sh "$file" | awk '{print $1}')
             ((numdirectories += 1))
-            
         elif [ -f "$file" ]; then
             archivos[$numArchivos]="$file"
             tamanoArchivos[$numArchivos]=$(du -sh "$file" | awk '{print $1}')
             ((numArchivos += 1))
         fi
     done
+
     total=$((${#archivos[@]} + ${#directorios[@]}))
+    
 }
+
 
 function showdirectories(){
     printf "\r\nDIRECTORIOS: \r\n"
@@ -62,12 +77,13 @@ function showFiles(){
 }
 
 function mostrar(){
+    clear
 
     if [ $opcion -lt 0 ]; then
         opcion=0
     fi
     echo "Listar todos los archivos del actual directorio"
-    echo "Presione la tecla 'q' para salir"
+    echo $mensaje
 
     showFiles
     showdirectories
@@ -75,12 +91,18 @@ function mostrar(){
     echo ""
 
     
-    if [ $opcion -ge $total ]; then
+    if [ $opcion -eq $total ]; then
+        echo -e "\e[30;47mAtras\e[0m"
+    else
+        echo "Atras"
+    fi
+    if [ $opcion -ge $((total + 1)) ]; then
         echo -e "\e[30;47mSalir\e[0m"
-        opcion=$total
+        opcion=$(($total + 1))
     else
         echo "Salir"
     fi
+
 }
 
 function reloaddirectories(){
@@ -88,9 +110,9 @@ function reloaddirectories(){
 }
 
 # Listar todos los archivos del actual directorio
-clear
 printf "\e[?25l" # Ocultar cursor
-carga
+carga "$PWD"
+clear
 mostrar
 
 
@@ -101,17 +123,25 @@ while true; do
         ((opcion -= 1))
     elif [[ $key == $'\e[B' ]]; then
         ((opcion += 1))
-    elif [[ $key == $'' && $opcion -ge $total ]]; then
+    elif [[ $key == $'' && $opcion -ge $((total + 1)) ]]; then
         printf "\e[?25h" # Mostrar cursor
         break  # Salir del bucle si se presiona Enter y opcion es igual o mayor que el total
+    elif [[ $key == $'' && $opcion -eq $total ]]; then
+        carga $(dirname "$PWD")
+        mostrar
+    elif [[ $key == $'' ]]; then
+        if [ $opcion -gt $((${#archivos[@]} - 1)) ]; then
+            indice_directorio=$((opcion - ${#archivos[@]}))
+
+            if [ $indice_directorio -lt ${#directorios[@]} ]; then
+                mensaje="${directorios[$indice_directorio]}"
+                carga "${directorios[$indice_directorio]}"
+                mostrar
+            fi
+        fi
     fi
+
 
     reloaddirectories
     mostrar
 done
-
-
-
-
-
-
