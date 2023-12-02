@@ -1,10 +1,3 @@
 ## SPACE MANAGER
 
-ADDED USER INTERFACE
-
-ADDED INTERACTIVITY
-
-ADDED REMOVE CAPABILITY
-
-ADDED TRASHCAN
-
+Script de bash que lista por tamaño los directorios y te permite eliminar archivos
