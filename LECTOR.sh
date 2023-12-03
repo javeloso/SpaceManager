@@ -1,8 +1,6 @@
 #!/bin/bash
 # LECTOR.sh
 
-mkdir Trash
-
 opcion=0
 directorios=()
 tamanoDirectorios=()
@@ -82,10 +80,7 @@ function showFiles(){
 
 function mostrar(){
     clear
-
-    if [ $opcion -lt 0 ]; then
-        opcion=0
-    fi
+    echo $XDG_DATA_HOME
     echo "Listar todos los archivos del actual directorio"
     echo $mensaje
 
@@ -100,9 +95,8 @@ function mostrar(){
     else
         echo "Atras"
     fi
-    if [ $opcion -ge $((total + 1)) ]; then
+    if [ $opcion -eq $((total + 1)) ]; then
         echo -e "\e[30;47mSalir\e[0m"
-        opcion=$(($total + 1))
     else
         echo "Salir"
     fi
@@ -142,13 +136,21 @@ while true; do
 
     if [[ $key == $'\e[A' ]]; then
         if [ $show -eq 0 ]; then
-            ((opcion -= 1))
+            if [ $opcion -le 0 ]; then
+                opcion=$((total + 1))
+            else
+                ((opcion -= 1))
+            fi
         else 
             ((yesNo -= 1))
         fi
     elif [[ $key == $'\e[B' ]]; then
         if [ $show -eq 0 ]; then
-            ((opcion += 1))
+            if [ $opcion -ge $((total + 1)) ]; then
+                opcion=0
+            else
+                ((opcion += 1))
+            fi
         else 
             ((yesNo += 1))
         fi
@@ -179,7 +181,7 @@ while true; do
                 show=0
                 mensaje="listar"
             else 
-                mv "${archivos[$opcion]}" Trash
+                rm "${archivos[$opcion]}" ~/Trash/
                 carga "$PWD"
                 mostrar
                 show=0
